@@ -13,9 +13,23 @@ defmodule World.Supervisor do
     children = [
       worker(World, []),
       supervisor(Cell.Supervisor, []),
-      supervisor(Registry, [:unique, Cell.Registry])
+      supervisor(Registry, [:unique, Cell.Registry], [id: 'cells']),
+      supervisor(Registry, [:unique, SocketHandler.Registry], [id: 'sockets']),
+      Plug.Cowboy.child_spec(scheme: :http, plug: GameOfLife.Router, options: [
+          dispatch: dispatch(),
+          port: 4000
+      ])
     ]
-    supervise(children, strategy: :one_for_one)
+    Supervisor.init(children, strategy: :one_for_one)
   end
+
+  defp dispatch do
+  [
+    {:_, [
+      {"/ws", GameOfLife.SocketHandler, []},
+      {:_, Plug.Cowboy.Handler, {GameOfLife.Router, []}}
+    ]}
+  ]
+end
 
 end

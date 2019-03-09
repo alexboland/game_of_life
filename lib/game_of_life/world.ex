@@ -13,6 +13,14 @@ defmodule World do
     GenServer.call(__MODULE__, {:tick})
   end
 
+  def run do
+    1..100000
+      |> Enum.map(fn
+        n -> World.tick()
+          :timer.sleep(500)
+      end)
+  end
+
   def handle_call({:tick}, from, _state) do
     ticks = Cell.Supervisor.children
       |> Enum.map(fn pid -> Task.async(fn -> Cell.tick(pid) end) end)
@@ -33,11 +41,17 @@ defmodule World do
       |> Enum.map(fn task -> Task.async(task) end)
       |> Enum.map(&Task.await/1)
 
-    #IO.inspect(ticks)
-    #IO.inspect(surviving_cells(ticks))
-    #IO.inspect(new_cells(ticks))
-    #IO.inspect("=====")
-    {:reply, %{births: births, deaths: deaths}, []}
+
+    births_json = Enum.map(births, fn b -> %{x: elem(b, 0), y: elem(b, 1)} end)
+    deaths_json = Enum.map(deaths, fn d -> %{x: elem(d, 0), y: elem(d, 1)} end)
+    info = %{births: births_json, deaths: deaths_json}
+
+
+    Registry.dispatch(SocketHandler.Registry, "/ws", fn entries ->
+      for {pid, _} <- entries, do: send(pid, info)
+    end)
+
+    {:reply, info, []}
   end
 
   defp dying_cells(cells) do

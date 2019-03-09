@@ -16,7 +16,7 @@ defmodule Cell do
   end
 
   def die(process) do
-    Supervisor.terminate_child(Cell.Supervisor, process)
+    process && Supervisor.terminate_child(Cell.Supervisor, process)
   end
 
   def handle_call({:tick}, _from, position) do
