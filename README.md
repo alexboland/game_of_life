@@ -8,6 +8,4 @@ World.tick() advances the world one tick and sends a message to any connected cl
 
 World.run() runs ticks regularly for a long period of time and sends those messages
 
-Right now the client will receive the messages properly, but messages sent to the server still do nothing (almost implemented)
-
 The port to connect to right now is 4000.
